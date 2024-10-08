@@ -12,7 +12,7 @@ data sources (version):
 * TUEV (v2.0.0)
 
 ## Data Preparation
-The scripts located under *project/src/dataset/scripts* are used to pre-process and 
+The scripts located under [*project/src/dataset/scripts*](project/src/dataset/scripts) are used to pre-process and 
 load the data from the original source.
 
 ## Deep Learning Model
@@ -62,10 +62,20 @@ sub-sampling of 75 samples was used in each TCAV run.
 | TUEG        | Young         | 79                |
 
 
-To re-create our TCAV results, run the scripts located under *project/src/tcav/scripts*.
+To re-create our TCAV results, run the scripts located under [*project/src/tcav/scripts*](project/src/tcav/scripts).
 
 ## Citation
 Please use the following citation:
+```
+@article{brenner2024concept,
+  title={Concept-based AI Interpretability in Physiological Time-Series Data: Example of Abnormality Detection in Electroencephalography},
+  author={Brenner, Alexander and Knispel, Felix and Fischer, Florian P and Rossmanith, Peter and Weber, Yvonne and Koch, Henner and R{\"o}hrig, Rainer and Varghese, Julian and Kutafina, Ekaterina},
+  journal={Computer Methods and Programs in Biomedicine},
+  pages={108448},
+  year={2024},
+  publisher={Elsevier}
+}
+```
 
 ## License
 [MIT License](LICENSE)
