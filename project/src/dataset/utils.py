@@ -3,6 +3,7 @@ import re
 import numpy as np
 import pandas as pd
 import pyedflib
+import os
 
 montage_20 = ["EEG FP1-REF -- EEG F7-REF",
               "EEG F7-REF -- EEG T3-REF",
@@ -245,7 +246,8 @@ def parse_age_and_gender_from_edf_header(file_path):
 
 
 def load_annotation(file_path, use_montage_20=True):
-    annot_path = file_path.split(".")[0] + ".rec"
+    root, _ = os.path.splitext(file_path)
+    annot_path = root + ".rec"
     annot = pd.read_csv(annot_path, sep=",").values
     df = pd.DataFrame(annot, columns=["ch_idx", "start", "end", "event"])
     df = df.sort_values(by=["event", "start", "end", "ch_idx"], ascending=True, ignore_index=True)

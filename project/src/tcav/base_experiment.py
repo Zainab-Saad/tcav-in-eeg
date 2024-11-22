@@ -13,12 +13,14 @@ def run_tcav(input_code, input_name, concept_codes, concept_names, n_input=100, 
     start_time = time.time()
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = "cpu"
 
     # Get input data
     input_data = get_dataset(input_code, random_n_samples=n_input)
     input_data = torch.utils.data.DataLoader(input_data, batch_size=n_input, shuffle=False)
-    input_data = next(iter(input_data)).to(device)
+    # input_data = next(iter(input_data)).to(device)
 
+    print('done moving data to cuda')
     # Assemble experimental sets
     experimental_sets = []
     for n in range(1, n_runs + 1):  # Count from one
@@ -26,10 +28,13 @@ def run_tcav(input_code, input_name, concept_codes, concept_names, n_input=100, 
         for concept_code, concept_name in zip(concept_codes, concept_names):
             concept_data = get_dataset(concept_code, random_n_samples=n_concept_sampels, random_state=n)
             concept_data = torch.utils.data.DataLoader(concept_data)
+            # for batch in concept_data:
+            #     batch = batch.to(device)  # Ensure concept data is on the same device
             concept = Concept(id=concept_code * 1000 + n, name=f"{concept_name}_{n:03d}", data_iter=concept_data)
             experimental_set.append(concept)
         experimental_sets.append(experimental_set)
 
+    print('start getting model prediction')
     # Get the model
     estimator = xceptiontime_v5(device=device)
     estimator.initialize()
@@ -38,9 +43,16 @@ def run_tcav(input_code, input_name, concept_codes, concept_names, n_input=100, 
     model = estimator.module_
     model.to(device)
 
+    print('done getting model prediction')
+
+
+    print('start applying tcav')
+
     # Apply TCAV
+    input_data = next(iter(input_data)).to("cuda")
     tcav = TCAV(model=model, layers=layers,
                 model_id=model_id, save_path=tcav_path, classifier=TCAVClassifier())
+    
     tcav_scores = tcav.interpret(inputs=input_data, experimental_sets=experimental_sets, target=target)
     tcav_scores = dict(tcav_scores)
     stats = {}
@@ -51,6 +63,7 @@ def run_tcav(input_code, input_name, concept_codes, concept_names, n_input=100, 
                                     "layer": tcav.cavs[cav_key][layer_key].layer,
                                     "stats": {"classes": tcav.cavs[cav_key][layer_key].stats["classes"],
                                               "accs": tcav.cavs[cav_key][layer_key].stats["accs"]}}
+            print('exp_stats: ', exp_stats)
         stats[cav_key] = exp_stats
 
     with open(f"{tcav_path}/{input_name}_{'_'.join(concept_names)}.pkl", "wb") as f:

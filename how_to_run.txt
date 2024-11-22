@@ -1,0 +1,16 @@
+python3 -m venv venv
+source venv/bin/activate
+add the following script to project/setup.py
+from setuptools import setup, find_packages
+
+setup(
+    name="tcav_in_eeg",
+    version="0.1",
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
+)
+
+pip install -e .
+
+export PYTHONPATH=/home/zainab/Documents/FYP/Codes/tcav-in-eeg/project
+python -m src.tcav.scripts.exp1_rel
