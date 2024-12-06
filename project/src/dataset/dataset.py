@@ -122,6 +122,8 @@ class Dataset(data.Dataset):
         """
         fv = []
         for idx in range(len(self)):
+        # for idx in range(20045, 20331):
+            # print("idx", idx)
             if self.return_target:
                 fv.append(self[idx][0])
             else:

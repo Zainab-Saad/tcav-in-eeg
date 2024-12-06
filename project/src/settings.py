@@ -13,6 +13,8 @@ tuev_150hz_dir = "/home/zainab/Documents/FYP/Codes/tcav-in-eeg/data/data/dataset
 generated_150hz_dir = "/home/zainab/Documents/FYP/Codes/tcav-in-eeg/data/datasets/generated_150hz/"
 
 cp_xceptiontime_v5 = "/home/zainab/Documents/FYP/Codes/tcav-in-eeg/data/checkpoints/cp_xceptiontime_v5/"
+cp_train_xceptiontime_v5 = "/home/zainab/Documents/FYP/Codes/tcav-in-eeg/cp_train_xceptiontime_v5/"
+
 
 tcav_dir = "/home/zainab/Documents/FYP/Codes/tcav-in-eeg/data/data/tcav/"
 tcav_name_dict_dir = "/home/zainab/Documents/FYP/Codes/tcav-in-eeg/project/src/tcav/"

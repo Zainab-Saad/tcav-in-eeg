@@ -24,8 +24,10 @@ try:
 except mlflow.exceptions.MlflowException:
     experiment = client.get_experiment_by_name("TUH")
 tags = {"script_name": os.path.basename(__file__)}
-run = client.create_run(experiment.experiment_id, run_name=os.path.basename(__file__), tags=tags)
-
+experiment_id = experiment.experiment_id if hasattr(experiment, 'experiment_id') else experiment
+run = client.create_run(experiment_id, run_name=os.path.basename(__file__), tags=tags) # then i did this and this works even when experiment is created
+# run = client.create_run(experiment.experiment_id, run_name=os.path.basename(__file__), tags=tags)  # this was original
+# run = client.create_run(experiment, run_name=os.path.basename(__file__), tags=tags) # first i did this but this gave error if experiment was already created
 
 def get_estimator(data_shape, class_weights, valid_sampler):
     net = NeuralNetClassifier(module=XceptionTimePlus, module__c_in=data_shape, module__c_out=2,
@@ -67,26 +69,31 @@ class GroupedSampler:
 
 
 dataset = CroppedDataset(root=dataset_root, file_list="train_list", buffer=False)
-
-sample_ids = [file["original_file_name"][:8] for file in dataset.file_list]
+# sample_ids = [file["original_file_name"][:8] for file in dataset.file_list]
+sample_ids = dataset.file_list["original_file_name"].str[:8].tolist()
+# sample_ids = sample_ids[20045:20331]
 sample_ids = LabelEncoder().fit_transform(sample_ids)
 unique_ids = np.unique(sample_ids)
 valid_sampler = GroupedSampler(GroupShuffleSplit(n_splits=1, random_state=42, test_size=0.1), sample_ids)
 
+print('===starting pipeline')
 # data = SliceDataset(dataset, idx=0)
 data = dataset.get_feature_matrix()
 data = np.asarray(data)
 data = data.astype("float32")
 
+print('====data', data)
 targets = dataset.get_class_labels()
 
 targets = np.asarray(targets)
 targets = targets.astype("int64")
+# targets = targets[20045:20331]
+print('====targets', targets)
 
 data_shape = data[0].shape[0]
-
+print('=====data_shape', data_shape)
 class_weights = torch.tensor([1 - np.count_nonzero(targets == 0) / len(targets), 1 - np.count_nonzero(targets == 1) / len(targets)])
-
+print('=====class_weights', class_weights)
 estimator = get_estimator(data_shape, class_weights, valid_sampler)
 
 estimator.fit(data, targets)
