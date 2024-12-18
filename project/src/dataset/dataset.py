@@ -4,6 +4,12 @@ import os
 import pandas as pd
 import copy
 from src.dataset.augmentation import mag_warp, time_warp, add_noise
+import psutil
+
+def log_memory_usage(step=""):
+    process = psutil.Process()
+    mem_info = process.memory_info()
+    print(f"[{step}] Memory used: {mem_info.rss / 1e6:.2f} MB")  # Resident memory in MB
 
 
 class Dataset(data.Dataset):
@@ -116,20 +122,62 @@ class Dataset(data.Dataset):
         # Reset index
         self.file_list.reset_index(drop=True, inplace=True)
 
-    def get_feature_matrix(self):
+    # def get_feature_matrix(self):
+    #     """
+    #     Return all feature matrices and log memory usage.
+    #     """
+    #     import numpy as np
+
+    #     fv = []
+    #     log_memory_usage("Start")  # Log initial memory usage
+    #     for idx in range(len(self)):
+    #         print("idx", idx)
+    #         if self.return_target:
+    #             fv.append(self[idx][0])
+    #         else:
+    #             fv.append(self[idx])
+    #         if idx % 100 == 0:  # Log memory usage every 100 iterations
+    #             log_memory_usage(f"After idx {idx}")
+    #     fv = np.stack(fv)
+    #     log_memory_usage("After stacking")
+    #     return fv
+
+
+    # def get_feature_matrix(self):
+    #     """
+    #     Return all feature matrices
+    #     """
+    #     fv = []
+    #     for idx in range(len(self)):
+    #     # for idx in range(20045, 20331):
+    #         print("idx", idx)
+    #         if self.return_target:
+    #             fv.append(self[idx][0])
+    #         else:
+    #             fv.append(self[idx])
+    #     fv = np.stack(fv)
+    #     return fv
+
+    # this is a modified version of the above function which processes the feature matrices in batches -- else RAM limit is exceeded
+    def get_feature_matrix(self, batch_size=500):
         """
-        Return all feature matrices
+        Process and return feature matrices in batches to reduce memory usage.
         """
+        import numpy as np
+
         fv = []
-        for idx in range(len(self)):
-        # for idx in range(20045, 20331):
-            # print("idx", idx)
-            if self.return_target:
-                fv.append(self[idx][0])
-            else:
-                fv.append(self[idx])
-        fv = np.stack(fv)
+        for start in range(0, len(self), batch_size):
+            batch_fv = []
+            for idx in range(start, min(start + batch_size, len(self))):
+                print("idx", idx)
+                if self.return_target:
+                    batch_fv.append(self[idx][0])
+                else:
+                    batch_fv.append(self[idx])
+            fv.append(np.stack(batch_fv))  # Stack only the current batch
+        fv = np.concatenate(fv, axis=0)  # Concatenate all batches
         return fv
+
 
     def __len__(self):
         return len(self.file_list)

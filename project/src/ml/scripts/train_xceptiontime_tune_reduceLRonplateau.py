@@ -29,26 +29,28 @@ run = client.create_run(experiment_id, run_name=os.path.basename(__file__), tags
 # run = client.create_run(experiment.experiment_id, run_name=os.path.basename(__file__), tags=tags)  # this was original
 # run = client.create_run(experiment, run_name=os.path.basename(__file__), tags=tags) # first i did this but this gave error if experiment was already created
 
-def get_estimator(data_shape, class_weights, valid_sampler):
+
+def get_estimator(data_shape, class_weights, valid_sampler, lr, output_dir, run):
     net = NeuralNetClassifier(module=XceptionTimePlus, module__c_in=data_shape, module__c_out=2,
                               module__nf=12, module__act=nn.LeakyReLU,
                               max_epochs=100,
                               iterator_train__shuffle=True,
                               criterion=nn.CrossEntropyLoss, criterion__weight=class_weights, optimizer=optim.AdamW,
                               train_split=valid_sampler,
-                              batch_size=32, lr=0.001, callbacks=[EpochScoring("accuracy",
+                              batch_size=32, lr=lr, callbacks=[EpochScoring("accuracy",
                                                                                lower_is_better=False,
                                                                                name="train_acc",
                                                                                on_train=True),
-                                                                  LRScheduler(policy=optim.lr_scheduler.OneCycleLR,
-                                                                              monitor="valid_loss", max_lr=0.0005,
-                                                                              epochs=1,
-                                                                              steps_per_epoch=100,
-                                                                              div_factor=10,
-                                                                              final_div_factor=1000,
-                                                                              step_every="epoch"),
+                                                                LRScheduler(policy=optim.lr_scheduler.ReduceLROnPlateau,
+                                                                            monitor="valid_loss", 
+                                                                            mode="min",
+                                                                            factor=0.1, 
+                                                                            patience=5, 
+                                                                            threshold=0.0001, 
+                                                                            cooldown=0, 
+                                                                            min_lr=1e-6),
                                                                   EarlyStopping(patience=25),
-                                                                  Checkpoint(dirname=f"cp_{os.path.basename(__file__).split('.')[0]}"),
+                                                                  Checkpoint(dirname=os.path.join(output_dir, "checkpoints")),
                                                                   MlflowLogger(run, client)
                                                                   ],
                               device=device)
@@ -123,20 +125,37 @@ data_shape = data[0].shape[0]
 print('=====data_shape', data_shape)
 class_weights = torch.tensor([1 - np.count_nonzero(targets == 0) / len(targets), 1 - np.count_nonzero(targets == 1) / len(targets)])
 print('=====class_weights', class_weights)
-estimator = get_estimator(data_shape, class_weights, valid_sampler)
 
-estimator.fit(data, targets)
 
-# plot
-history = estimator.history
-epochs = range(1, len(history) + 1)
+# Ranges for hyperparameters
+learning_rates = [0.000001, 0.00001, 0.0001, 0.0001, 0.001, 0.01]
 
-train_loss = history[:, 'train_loss']
-valid_loss = history[:, 'valid_loss']
 
-train_acc = history[:, 'train_acc']
-valid_acc = history[:, 'valid_acc']
+# Run experiments
+for lr in learning_rates:
+    # Create output directory
+    run_name = f"reduceLRonplateau_{lr}"
+    output_dir = os.path.join("experiments", run_name)
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # MLflow run
+    tags = {"script_name": os.path.basename(__file__), "lr": lr}
+    run = client.create_run(experiment.experiment_id, run_name=run_name, tags=tags)
 
-plot_loss(epochs, train_loss, valid_loss, plot_name="training_validation_loss")
+    print(f"\nStarting run: {run_name}")
+    estimator = get_estimator(data_shape, class_weights, valid_sampler, lr, output_dir, run)
+    estimator.fit(data, targets)
+    
+    # Extract and save plots
+    history = estimator.history
+    epochs = range(1, len(history) + 1)
+    train_loss = history[:, 'train_loss']
+    valid_loss = history[:, 'valid_loss']
+    train_acc = history[:, 'train_acc']
+    valid_acc = history[:, 'valid_acc']
+    
+    # Save plots
+    plot_loss(epochs, train_loss, valid_loss, output_dir)
+    plot_accuracy(epochs, train_acc, valid_acc, output_dir)
 
-plot_accuracy(epochs, train_acc, valid_acc, plot_name="training_validation_accuracy")
+    print(f"Run {run_name} completed. Results saved in {output_dir}")
