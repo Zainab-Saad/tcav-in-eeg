@@ -37,7 +37,7 @@ n_concept_samples = 75
 input_name = "abnormal_test"
 input_code = name_dict.loc[name_dict["Name"] == input_name, "Code"].values[0]
 n_input = 100
-n_runs = 100
+n_runs = 3
 tcav_path = tcav_dir
 device = "cpu"
 target = 1

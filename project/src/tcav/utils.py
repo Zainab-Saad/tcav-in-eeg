@@ -12,6 +12,7 @@ tuev_root = tuev_150hz_dir
 def get_dataset(concept_code, random_n_samples=10, random_state=0):
     dataset = None
     digits = [int(d) for d in str(concept_code)]
+    print('=================================================concept_codem digits', concept_code, digits)
 
     # Placeholder
     dataset_root = None
@@ -98,6 +99,7 @@ def get_dataset(concept_code, random_n_samples=10, random_state=0):
     # Check Generated index
     if digits[3] >= 1:
         # Frequency filtering?
+        print('=========================================================digits[3]', digits[3])
         if digits[3] == 2:
             freqs = [[1, 3]]
         if digits[3] == 3:
@@ -105,6 +107,8 @@ def get_dataset(concept_code, random_n_samples=10, random_state=0):
         if digits[3] == 4:
             freqs = [[8, 13]]
         if digits[3] == 5:
+            freqs = [[14, 30]]
+        if digits[3] == 6:
             freqs = [[31, 50]]
         dataset = GeneratedDataset(dataset_size=10, timeseries_len=9000, n_channels=20, random_seed=0,
                                    amplitude=[5, 25], srate=150, freqs=freqs, randomize_per_channel=False,
